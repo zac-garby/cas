@@ -4,19 +4,10 @@ A computer algebra system in Haskell. At the time of writing this it consists of
 
 ## Example
 
-As an example, some expansion rules are defined in [Main.hs](Main.hs). Using these, the expression `tan(X + Y)` can be expanded into the following forms:
-
-```
-tan((X + Y))
-(sin((X + Y)) / cos((X + Y)))
-(((sin(X) * cos(Y)) + (cos(X) * sin(Y))) / cos((X + Y)))
-(sin((X + Y)) / ((cos(X) * cos(Y)) - (sin(X) * sin(Y))))
-(((sin(X) * cos(Y)) + (cos(X) * sin(Y))) / ((cos(X) * cos(Y)) - (sin(X) * sin(Y))))
-```
+As an example, some expansion rules are defined in [Main.hs](Main.hs). Using these, the expression `tan(X + Y)` can be expanded into `(((sin(X) * cos(Y)) + (cos(X) * sin(Y))) / ((cos(X) * cos(Y)) - (sin(X) * sin(Y))))` using the built-in trigonometry expansion rules.
 
 ## What needs doing?
 
- - Add unary prefix operators (e.g. `-x`, `!y`).
  - Write more transformation rules.
      - Basic axioms like `a + b = b + a`, `a + 0 = a`.
      - More trigonemtry identities.
