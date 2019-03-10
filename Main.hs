@@ -58,23 +58,20 @@ match a b = if a == b then Just [] else Nothing
 
 substitute :: Match -> Term -> Term
 substitute vars term@(Hole x) = fromMaybe term (lookup x vars)
-substitute vars (Op op l r) = Op op (substitute vars l) (substitute vars r)
-substitute vars (Prefix op x) = Prefix op (substitute vars x)
-substitute vars (Call fn args) = Call fn $ map (substitute vars) args
-substitute _ term = term
+substitute vars term = applyInside (substitute vars) term
 
 applyRule :: Rule -> Term -> Term
 applyRule rule@(pattern, replacement) term = case match pattern term of
-    Nothing -> applyInside rule term
+    Nothing -> applyInside (applyRule rule) term
     Just vars -> substitute vars replacement
 
 applyRules :: [Rule] -> Term -> [Term]
 applyRules rules term = nub $ map (\r -> applyRule r term) rules
 
-applyInside :: Rule -> Term -> Term
-applyInside rule (Op op left right) = Op op (applyRule rule left) (applyRule rule right)
-applyInside rule (Prefix op x) = Prefix op (applyRule rule x)
-applyInside rule (Call fn args) = Call fn $ map (applyRule rule) args
+applyInside :: (Term -> Term) -> Term -> Term
+applyInside f (Op op left right) = Op op (f left) (f right)
+applyInside f (Prefix op x) = Prefix op (f x)
+applyInside f (Call fn args) = Call fn $ map f args
 applyInside _ term = term
 
 expansionIterations :: [Rule] -> Term -> [[Term]]
