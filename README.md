@@ -26,3 +26,4 @@ tan((X + Y))
      - Might be implemented as another set of transformation rules, constructed from some designed to simplify but also the inverses of some expansion rule sets.
  - Parsing of expressions, so things can be entered much more easily.
  - A REPL.
+ - Abstract a lot of behaviour by implementing a functor-like interface for terms.
