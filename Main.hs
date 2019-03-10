@@ -85,7 +85,10 @@ firstIdempotentIteration (x:y:ys)
     | x == y = x
     | otherwise = firstIdempotentIteration ys
 
-expand :: [Rule] -> Term -> [Term]
-expand rules = firstIdempotentIteration . expansionIterations rules
+expansions :: [Rule] -> Term -> [Term]
+expansions rules = firstIdempotentIteration . expansionIterations rules
 
-main = forM_ (expand trigExpansionRules $ Call "tan" [Variable "X" @+ Variable "Y"]) (putStrLn . showTerm)
+expand :: [Rule] -> Term -> Term
+expand rules = last . expansions rules
+
+main = putStrLn $ showTerm $ expand trigExpansionRules $ Call "tan" [Variable "X" @+ Variable "Y"]
