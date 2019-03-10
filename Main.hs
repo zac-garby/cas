@@ -10,6 +10,7 @@ data Term
     | Variable String
     | Constant String
     | Op String Term Term
+    | Prefix String Term
     | Call String [Term]
     deriving (Show, Read, Eq)
 
@@ -38,6 +39,7 @@ showTerm (Number x) = if isInteger x then show $ round x else show x
 showTerm (Variable x) = x
 showTerm (Constant x) = x
 showTerm (Op op l r) = "(" ++ showTerm l ++ " " ++ op ++ " " ++ showTerm r ++ ")"
+showTerm (Prefix op x) = op ++ showTerm x
 showTerm (Call fn args) = fn ++ "(" ++ intercalate ", " (map showTerm args) ++ ")"
 
 match :: Pattern -> Term -> Maybe Match
@@ -45,6 +47,9 @@ match (Hole x) term = Just [(x, term)]
 match (Op patternOp patternL patternR) (Op termOp termL termR)
     | patternOp /= termOp = Nothing
     | otherwise = (++) <$> (match patternL termL) <*> (match patternR termR)
+match (Prefix patternOp patternX) (Prefix termOp termX)
+    | patternOp /= termOp = Nothing
+    | otherwise = match patternX termX
 match (Call patternFn patternArgs) (Call termFn termArgs)
     | patternFn /= termFn = Nothing
     | length patternArgs /= length termArgs = Nothing
@@ -54,6 +59,7 @@ match a b = if a == b then Just [] else Nothing
 substitute :: Match -> Term -> Term
 substitute vars term@(Hole x) = fromMaybe term (lookup x vars)
 substitute vars (Op op l r) = Op op (substitute vars l) (substitute vars r)
+substitute vars (Prefix op x) = Prefix op (substitute vars x)
 substitute vars (Call fn args) = Call fn $ map (substitute vars) args
 substitute _ term = term
 
@@ -67,6 +73,7 @@ applyRules rules term = nub $ map (\r -> applyRule r term) rules
 
 applyInside :: Rule -> Term -> Term
 applyInside rule (Op op left right) = Op op (applyRule rule left) (applyRule rule right)
+applyInside rule (Prefix op x) = Prefix op (applyRule rule x)
 applyInside rule (Call fn args) = Call fn $ map (applyRule rule) args
 applyInside _ term = term
 
