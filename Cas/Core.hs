@@ -15,7 +15,6 @@ data Term
     = Hole String
     | Number Double
     | Variable String
-    | Constant String
     | Op String Term Term
     | Prefix String Term
     | Call String [Term]
@@ -44,7 +43,6 @@ showTerm :: Term -> String
 showTerm (Hole x) = "?" ++ x
 showTerm (Number x) = if isInteger x then show $ round x else show x
 showTerm (Variable x) = x
-showTerm (Constant x) = x
 showTerm (Op op l r) = "(" ++ showTerm l ++ " " ++ op ++ " " ++ showTerm r ++ ")"
 showTerm (Prefix op x) = op ++ showTerm x
 showTerm (Call fn args) = fn ++ "(" ++ intercalate ", " (map showTerm args) ++ ")"
