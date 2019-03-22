@@ -1,15 +1,7 @@
-module Cas.Core
-    ( Term (..), Pattern, Rule, Match
-    , (@+), (@-), (@*), (@/)
-    , trigExpansionRules
-    , showTerm
-    , expansions
-    , expand
-    ) where
+module Cas.Core where
 
-import Control.Monad
-import Data.List
 import Data.Maybe
+import Data.List
 
 data Term
     = Hole String
@@ -82,10 +74,10 @@ applyInside _ term = term
 expansionIterations :: [Rule] -> Term -> [[Term]]
 expansionIterations rules term = map nub $ iterate (>>= applyRules rules) [term]
 
-firstIdempotentIteration :: [[Term]] -> [Term]
+firstIdempotentIteration :: (Eq a) => [a] -> a
 firstIdempotentIteration (x:y:ys)
     | x == y = x
-    | otherwise = firstIdempotentIteration ys
+    | otherwise = firstIdempotentIteration (y:ys)
 
 expansions :: [Rule] -> Term -> [Term]
 expansions rules = firstIdempotentIteration . expansionIterations rules
