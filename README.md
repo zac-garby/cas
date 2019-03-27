@@ -4,7 +4,7 @@ A computer algebra system in Haskell. At the time of writing this it consists of
 
 ## Example
 
-As an example, some expansion rules are defined in [Main.hs](Main.hs). Using these, the expression `tan(X + Y)` can be expanded into `(((sin(X) * cos(Y)) + (cos(X) * sin(Y))) / ((cos(X) * cos(Y)) - (sin(X) * sin(Y))))` using the built-in trigonometry expansion rules.
+As an example, some expansion rules are defined inside the library. Using these, the expression `tan(X + Y)` can be expanded into `(((sin(X) * cos(Y)) + (cos(X) * sin(Y))) / ((cos(X) * cos(Y)) - (sin(X) * sin(Y))))` using the built-in trigonometry expansion rules.
 
 ## What needs doing?
 
