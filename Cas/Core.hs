@@ -39,19 +39,28 @@ showTerm (Op op l r) = "(" ++ showTerm l ++ " " ++ op ++ " " ++ showTerm r ++ ")
 showTerm (Prefix op x) = op ++ showTerm x
 showTerm (Call fn args) = fn ++ "(" ++ intercalate ", " (map showTerm args) ++ ")"
 
-match :: Pattern -> Term -> Maybe Match
-match (Hole x) term = Just [(x, term)]
-match (Op patternOp patternL patternR) (Op termOp termL termR)
+match' :: Pattern -> Term -> Maybe Match
+match' (Hole x) term = Just [(x, term)]
+match' (Op patternOp patternL patternR) (Op termOp termL termR)
     | patternOp /= termOp = Nothing
-    | otherwise = (++) <$> (match patternL termL) <*> (match patternR termR)
-match (Prefix patternOp patternX) (Prefix termOp termX)
+    | otherwise = (++) <$> (match' patternL termL) <*> (match' patternR termR)
+match' (Prefix patternOp patternX) (Prefix termOp termX)
     | patternOp /= termOp = Nothing
-    | otherwise = match patternX termX
-match (Call patternFn patternArgs) (Call termFn termArgs)
+    | otherwise = match' patternX termX
+match' (Call patternFn patternArgs) (Call termFn termArgs)
     | patternFn /= termFn = Nothing
     | length patternArgs /= length termArgs = Nothing
-    | otherwise = concat <$> sequence (zipWith match patternArgs termArgs)
-match a b = if a == b then Just [] else Nothing
+    | otherwise = concat <$> sequence (zipWith match' patternArgs termArgs)
+match' a b = if a == b then Just [] else Nothing
+
+match :: Pattern -> Term -> Maybe Match
+match pattern term = case match' pattern term of
+    Nothing -> Nothing
+    Just vars -> if consistent vars then Just vars else Nothing
+
+consistent :: Match -> Bool
+consistent ms = all check ms
+    where check (name, val) = (fromJust $ lookup name ms) == val
 
 substitute :: Match -> Term -> Term
 substitute vars term@(Hole x) = fromMaybe term (lookup x vars)
