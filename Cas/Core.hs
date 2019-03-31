@@ -2,6 +2,8 @@ module Cas.Core where
 
 import Data.Maybe
 import Data.List
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 
 data Term
     = Hole String
@@ -14,7 +16,25 @@ data Term
 
 type Pattern = Term
 type Rule = (Term, Term)
-type Match = [(String, Term)]
+
+data Match
+    = Match { getMatch :: Map String Term }
+    | NoMatch
+    deriving (Show, Eq)
+
+instance Semigroup Match where
+    -- It can be assumed, when joining two matches, that each individual
+    -- map is already consistent with itself. This should be the case when
+    -- a match is generated from the `match` function.
+    Match a <> Match b
+        | consistent = Match (a <> b)
+        | otherwise = NoMatch
+        where consistent = all checkConsistency (M.toList b)
+              checkConsistency (k, v) = case M.lookup k a of
+                  Just prev -> v == prev
+                  Nothing   -> True
+
+    _ <> _ = NoMatch
 
 -- Shorthand for some common operators
 (@+) = Op "+"
@@ -39,37 +59,28 @@ showTerm (Op op l r) = "(" ++ showTerm l ++ " " ++ op ++ " " ++ showTerm r ++ ")
 showTerm (Prefix op x) = op ++ showTerm x
 showTerm (Call fn args) = fn ++ "(" ++ intercalate ", " (map showTerm args) ++ ")"
 
-match' :: Pattern -> Term -> Maybe Match
-match' (Hole x) term = Just [(x, term)]
-match' (Op patternOp patternL patternR) (Op termOp termL termR)
-    | patternOp /= termOp = Nothing
-    | otherwise = (++) <$> (match' patternL termL) <*> (match' patternR termR)
-match' (Prefix patternOp patternX) (Prefix termOp termX)
-    | patternOp /= termOp = Nothing
-    | otherwise = match' patternX termX
-match' (Call patternFn patternArgs) (Call termFn termArgs)
-    | patternFn /= termFn = Nothing
-    | length patternArgs /= length termArgs = Nothing
-    | otherwise = concat <$> sequence (zipWith match' patternArgs termArgs)
-match' a b = if a == b then Just [] else Nothing
+match :: Pattern -> Term -> Match
+match (Hole x) term = Match $ M.fromList [(x, term)]
+match (Op patternOp patternL patternR) (Op termOp termL termR)
+    | patternOp /= termOp = NoMatch
+    | otherwise = (<>) (match patternL termL) (match patternR termR)
+match (Prefix patternOp patternX) (Prefix termOp termX)
+    | patternOp /= termOp = NoMatch
+    | otherwise = match patternX termX
+match (Call patternFn patternArgs) (Call termFn termArgs)
+    | patternFn /= termFn = NoMatch
+    | length patternArgs /= length termArgs = NoMatch
+    | otherwise = foldl (<>) (Match M.empty) (zipWith match patternArgs termArgs)
+match a b = if a == b then Match M.empty else NoMatch
 
-match :: Pattern -> Term -> Maybe Match
-match pattern term = case match' pattern term of
-    Nothing -> Nothing
-    Just vars -> if consistent vars then Just vars else Nothing
-
-consistent :: Match -> Bool
-consistent ms = all check ms
-    where check (name, val) = (fromJust $ lookup name ms) == val
-
-substitute :: Match -> Term -> Term
-substitute vars term@(Hole x) = fromMaybe term (lookup x vars)
+substitute :: Map String Term -> Term -> Term
+substitute vars term@(Hole x) = fromMaybe term (M.lookup x vars)
 substitute vars term = applyInside (substitute vars) term
 
 applyRule :: Rule -> Term -> Term
 applyRule rule@(pattern, replacement) term = case match pattern term of
-    Nothing -> applyInside (applyRule rule) term
-    Just vars -> substitute vars replacement
+    NoMatch -> applyInside (applyRule rule) term
+    Match vars -> substitute vars replacement
 
 applyRules :: [Rule] -> Term -> [Term]
 applyRules rules term = nub $ map (\r -> applyRule r term) rules
